@@ -1,8 +1,11 @@
-DOCKER_MACHINE_VERSION := 0.5.0
-BOOT2DOCKER_VERSION := 1.9.0
-DOCKER_VERSION := 1.9.0
-DOCKER_COMPOSE_VERSION := 1.5.0
+DOCKER_MACHINE_VERSION := 0.7.0
+BOOT2DOCKER_VERSION := 1.10.3
+DOCKER_VERSION := 1.10.3
+DOCKER_COMPOSE_VERSION := 1.6.2
 MACHINE_NAME := docker-host
+VB_MEMORY := "4096"
+VB_CPU_C := "2"
+VB_NETWORK := 192.168.10.1/24
 
 B2D_ISO_FILE := iso/boot2docker.iso
 B2D_ISO_URL := https://github.com/boot2docker/boot2docker/releases/download/v$(BOOT2DOCKER_VERSION)/boot2docker.iso
@@ -45,15 +48,13 @@ upgrade:
 ifeq ($(OS),Windows_NT)
 	echo "You are on Windows. The only way for now is downloading latest docker toolbox. Go to docker site and do it."
 else ifeq ($(UNAME_S),Darwin)
-	curl -L https://github.com/docker/machine/releases/download/v$(DOCKER_MACHINE_VERSION)/docker-machine_darwin-amd64.zip >machine.zip && \
-	unzip machine.zip && \
-	rm machine.zip && \
-	sudo mv -f docker-machine* /usr/local/bin
+	sudo curl -L https://github.com/docker/machine/releases/download/v$(DOCKER_MACHINE_VERSION)/docker-machine-$(UNAME_S)-$(UNAME_M) > /usr/local/bin/docker-machine && \
+	chmod +x /usr/local/bin/docker-machine
 	# Install docker-compose
 	sudo curl -L https://github.com/docker/compose/releases/download/$(DOCKER_COMPOSE_VERSION)/docker-compose-$(UNAME_S)-$(UNAME_M) > /usr/local/bin/docker-compose
 	sudo chmod +x /usr/local/bin/docker-compose
 	# Install docker
-	sudo curl -L https://get.docker.com/builds/$(UNAME_S)/$(UNAME_M)/docker-1.9.0 > /usr/local/bin/docker
+	sudo curl -L https://get.docker.com/builds/$(UNAME_S)/$(UNAME_M)/docker-$(DOCKER_VERSION) > /usr/local/bin/docker
 	sudo chmod +x /usr/local/bin/docker
 else ifeq ($(UNAME_S),Linux)
 	curl -sSL https://get.docker.com/ | sh
@@ -66,8 +67,8 @@ build-docker-machine: download-iso
 	VBoxManage controlvm $(MACHINE_NAME) poweroff | true
 	VBoxManage unregistervm $(MACHINE_NAME) --delete || true
 	docker-machine rm $(MACHINE_NAME) || true
-	docker-machine create --driver=virtualbox --virtualbox-memory="6144" --virtualbox-cpu-count="4" \
-	--virtualbox-boot2docker-url=iso/boot2docker.iso --virtualbox-hostonly-cidr=192.168.10.1/24 \
+	docker-machine create --driver=virtualbox --virtualbox-memory=$(VB_MEMORY) --virtualbox-cpu-count=$(VB_CPU_C) \
+	--virtualbox-boot2docker-url=iso/boot2docker.iso --virtualbox-hostonly-cidr=$(VB_NETWORK) \
 	--virtualbox-no-share \
 	$(MACHINE_NAME)
 	# Download docker-compose to permanent storage.
@@ -76,6 +77,8 @@ build-docker-machine: download-iso
 	docker-machine scp machine/files/bootsync.sh $(MACHINE_NAME):/tmp/bootsync.sh
 	# Run provisioning script.
 	docker-machine ssh $(MACHINE_NAME) < machine/scripts/provision.sh
+	# Copy SSH Public Key from id_rsa.pub to VM
+	cat ~/.ssh/id_rsa.pub | docker-machine ssh docker-host "cat >> /home/docker/.ssh/authorized_keys
 	# Restart VM to apply settings.
 	docker-machine stop $(MACHINE_NAME)
 	VBoxManage modifyvm $(MACHINE_NAME) --natpf1 docker,tcp,127.0.0.1,2375,,2375
