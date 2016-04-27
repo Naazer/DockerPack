@@ -78,7 +78,7 @@ build-docker-machine: download-iso
 	# Run provisioning script.
 	docker-machine ssh $(MACHINE_NAME) < machine/scripts/provision.sh
 	# Copy SSH Public Key from id_rsa.pub to VM
-	cat ~/.ssh/id_rsa.pub | docker-machine ssh docker-host "cat >> /home/docker/.ssh/authorized_keys
+	cat ~/.ssh/id_rsa.pub | docker-machine ssh docker-host "cat >> /home/docker/.ssh/authorized_keys"
 	# Restart VM to apply settings.
 	docker-machine stop $(MACHINE_NAME)
 	VBoxManage modifyvm $(MACHINE_NAME) --natpf1 docker,tcp,127.0.0.1,2375,,2375
