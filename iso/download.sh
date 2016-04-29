@@ -17,5 +17,4 @@ fi
 
 echo "Downloading..."
 curl -L ${URL} > ${FILENAME}
-NEWCHECKSUM=$(shasum -a256 $FILENAME | awk '{print $1}')
-echo $NEWCHECKSUM > $FILENAME.checksum
+

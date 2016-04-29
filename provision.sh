@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+DOCKER_MACHINE_VERSION="0.7.0"
+BOOT2DOCKER_VERSION="1.11.1"
+DOCKER_VERSION="1.11.1"
+DOCKER_COMPOSE_VERSION="1.7.0"
+MACHINE_NAME="docker-host"
+VB_MEMORY="4096"
+VB_CPU_C="2"
+VB_DISK_SIZE="51200"
+VB_NETWORK="192.168.10.1/24"
+
+B2D_ISO_URL="https://github.com/boot2docker/boot2docker/releases/download/v$BOOT2DOCKER_VERSION/boot2docker.iso"
+B2D_ISO_CHECKSUM="61414d91109d198fee0b9113c7997f37065a0a019e8508ab5e383d4077274c82"
+
 arguments=$*
 if [ $# -eq 0 ]; then
     noargs=1
@@ -8,6 +21,14 @@ fi
 for i in "$@"
 do
 case $i in
+    --install)
+    install=1
+    shift # past argument with no value
+    ;;
+    --build-iso)
+    buildiso=1
+    shift # past argument with no value
+    ;;
     --rebuild)
     rebuild=1
     shift # past argument with no value
@@ -17,7 +38,7 @@ case $i in
     shift # past argument with no value
     ;;
     *)
-            # unknown option
+    # unknown option
     ;;
 esac
 done
@@ -30,32 +51,96 @@ elif [ "$(expr substr $(uname -s) 1 6 2>/dev/null)" == "CYGWIN" ]; then
     echo "Windows detected"
 fi
 
-
-# If no parameters specified
-if [ -n "$noargs" ]
+# Install docker
+if [ -n "$install" ]
 then
-    # Write DOCKER_HOST variable export to a matching .rc file based on the shell (bash or zsh)
-    SOURCE_FILE=''
-    DOCKER_HOST_EXPORT='\n# Docker (default for Vagrant based boxes)\nexport DOCKER_HOST=tcp://localhost:2375\n'
+    if [ "$(uname)" == "Darwin" ]; then
+        UNAME_S=`uname -s`
+        UNAME_P=`uname -p`
+        UNAME_M=`uname -m`
+        sudo curl -L https://github.com/docker/machine/releases/download/v$DOCKER_MACHINE_VERSION/docker-machine-$UNAME_S-$UNAME_M > /usr/local/bin/docker-machine && \
+        chmod +x /usr/local/bin/docker-machine
+        # Install docker-compose
+        sudo curl -L https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$UNAME_S-$UNAME_M > /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        # Install docker
+        sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
+        sudo chmod +x /usr/local/bin/docker
 
-    # Detect shell to write to the right .rc file
-    if [[ $SHELL == '/bin/bash' || $SHELL == '/bin/sh' ]]; then SOURCE_FILE=".bash_profile"; fi
-    if [[ $SHELL == '/bin/zsh' ]]; then	SOURCE_FILE=".zshrc"; fi
+        # Redownkoad iso if necessary
+        chmod +x iso/download.sh && iso/download.sh $B2D_ISO_URL $B2D_ISO_CHECKSUM
+        # Create virtual machine
+        VBoxManage controlvm $MACHINE_NAME poweroff 2>/dev/null || true
+        VBoxManage unregistervm $MACHINE_NAME --delete 2>/dev/null || true
+        docker-machine rm $MACHINE_NAME 2>/dev/null || true
+        docker-machine create --driver=virtualbox --virtualbox-memory=$VB_MEMORY --virtualbox-cpu-count=$VB_CPU_C \
+            --virtualbox-boot2docker-url=iso/boot2docker.iso --virtualbox-hostonly-cidr=$VB_NETWORK \
+            --virtualbox-disk-size=$VB_DISK_SIZE \
+            --virtualbox-no-share \
+            $MACHINE_NAME
+        # Download docker-compose to permanent storage.
+        docker-machine ssh $MACHINE_NAME 'sudo curl -L https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-`uname -s`-`uname -m` --create-dirs -o /var/lib/boot2docker/bin/docker-compose'
+        # Copy bootsync to docker machine
+        docker-machine scp machine/files/bootsync.sh $MACHINE_NAME:/tmp/bootsync.sh
+        docker-machine scp ~/.ssh/id_rsa.pub $MACHINE_NAME:/tmp/id_rsa.pub
+        # Run provisioning script.
+        docker-machine ssh $MACHINE_NAME < machine/scripts/provision.sh
+        # Restart VM to apply settings.
+        docker-machine stop $MACHINE_NAME
+        VBoxManage modifyvm $MACHINE_NAME --natpf1 docker,tcp,127.0.0.1,2375,,2375
+        VBoxManage modifyvm $MACHINE_NAME --natpf1 docker-ssl,tcp,127.0.0.1,2376,,2376
+        # Restart VM to apply settings.
+        docker-machine start $MACHINE_NAME
+        #set TLS
+        sed -iE '/192.168.10.10/d' $HOME/.ssh/known_hosts
+        docker-machine regenerate-certs -f $MACHINE_NAME
+        eval $(docker-machine env $MACHINE_NAME)
 
-    if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" != "Linux" ]; then
+        # Detect shell to write to the right .rc file
+        if [[ $SHELL == '/bin/bash' || $SHELL == '/bin/sh' ]]; then SOURCE_FILE=".bash_profile"; fi
+        if [[ $SHELL == '/bin/zsh' ]]; then	SOURCE_FILE=".zshrc"; fi
         if [[ $SOURCE_FILE ]]; then
-            # See if we already did this and skip if so
-            grep -q "export DOCKER_HOST=tcp://localhost:2375" $HOME/$SOURCE_FILE
-            if [[ $? -ne 0 ]]; then
-                echo -e "${green}Adding automatic DOCKER_HOST export to $HOME/$SOURCE_FILE${NC}"
-                echo -e $DOCKER_HOST_EXPORT >> $HOME/$SOURCE_FILE
-            fi
+            echo $HOME/$SOURCE_FILE
+            sed -iE '/DOCKER_TLS_VERIFY/d' $HOME/$SOURCE_FILE
+            sed -iE '/DOCKER_HOST/d' $HOME/$SOURCE_FILE
+            sed -iE '/DOCKER_CERT_PATH/d' $HOME/$SOURCE_FILE
+            sed -iE '/DOCKER_MACHINE_NAME/d' $HOME/$SOURCE_FILE
+            sed -iE '/# Run this command to configure your shell:/d' $HOME/$SOURCE_FILE
+            sed -iE '/eval $(docker-machine env/d' $HOME/$SOURCE_FILE
+            docker-machine env $MACHINE_NAME >> $HOME/$SOURCE_FILE
         else
             echo -e "${red}Cannot detect your shell. Please manually add the following to your respective .rc or .profile file:${NC}"
             echo -e "$DOCKER_HOST_EXPORT"
         fi
+
+
+    elif [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" == "Linux" ]; then
+        echo "Linux detected"
+    elif [ "$(expr substr $(uname -s) 1 6 2>/dev/null)" == "CYGWIN" ]; then
+        echo "You are on Windows. The only way for now is downloading latest docker toolbox. Go to docker site and do it."
     fi
 
+    exit
+fi
+
+if [ -n "$buildiso" ]
+then
+    docker build -t boot2docker iso/docker
+    # Generate Iso
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no docker@192.168.10.10 'docker run --rm boot2docker > boot2docker.iso'
+    # Download Iso
+    scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no docker@192.168.10.10:boot2docker.iso iso
+    # Calculate SHA sum
+    ACTUAL=`shasum -a256 iso/boot2docker.iso | awk '{print $1}'`
+    echo $ACTUAL
+    # Delete boot2docker on remote
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no docker@192.168.10.10 'rm -rf boot2docker.iso'
+fi
+
+
+# If no parameters specified
+if [ -n "$noargs" ]
+then
     # Only for Linux set docker parameters
     if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" == "Linux" ]; then
         # Update docker daemon options and restart
@@ -106,16 +191,12 @@ docker rm -f sinopia > /dev/null 2>&1 || true
 
 if [ -n "$rebuild" ]
 then
-    docker rmi -f datasyntax/ansible > /dev/null 2>&1 || true
     docker rmi -f datasyntax/nginx-proxy > /dev/null 2>&1 || true
 fi
 
 
 if [ -n "$noargs" ] || [ -n "$globalcontainers" ] || [ -n "rebuild" ]
 then
-
-    echo "Building ansible image... "
-    docker build -t datasyntax/ansible dockers/ansible/
 
     echo "Building nginx-proxy image... "
     docker build -t datasyntax/nginx-proxy dockers/nginx-proxy/

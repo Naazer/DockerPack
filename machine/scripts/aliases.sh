@@ -1,19 +1,5 @@
 #!/bin/sh
 
-#TODO: we do not need this staff
-#alias docker-compose='docker run \
-#-it \
-#--rm \
-#-v /var/run/docker.sock:/var/run/docker.sock \
-#-v $(pwd):/app \
-#datasyntax/compose'
-#
-#alias docker-compose-nontty='docker run \
-#--rm \
-#-v /var/run/docker.sock:/var/run/docker.sock \
-#-v $(pwd):/app \
-#datasyntax/
-
 # Kill all running containers.
 alias dockerkillall='docker kill $(docker ps -q)'
 

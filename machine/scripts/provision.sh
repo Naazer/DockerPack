@@ -26,13 +26,13 @@ sudo mv /tmp/bootsync.sh /var/lib/boot2docker/bootsync.sh
 sudo chown root:root /var/lib/boot2docker/bootsync.sh
 sudo chmod +x /var/lib/boot2docker/bootsync.sh
 
-# Disable DOCKER_TLS
-# sudo sed -i 's/DOCKER_TLS=.*/DOCKER_TLS=no/' /var/lib/boot2docker/profile
-# sudo sed -i 's/2376/2375/' /var/lib/boot2docker/profile
+sudo mv /tmp/id_rsa.pub /var/lib/boot2docker/id_rsa.pub
+sudo chown root:root /var/lib/boot2docker/id_rsa.pub
 
 # Append Docker IP and DNS configuration to EXTRA_ARGS
-sudo sed -i "/EXTRA_ARGS='/a --dns 172.17.0.1 --dns 8.8.8.8" /var/lib/boot2docker/profile
-sudo sed -i "/EXTRA_ARGS='/a --bip=172.17.0.1/24" /var/lib/boot2docker/profile
+sudo sed -i "/EXTRA_ARGS='/a --dns 172.17.42.1 --dns 8.8.8.8" /var/lib/boot2docker/profile
+sudo sed -i "/EXTRA_ARGS='/a --bip=172.17.42.1/24" /var/lib/boot2docker/profile
+
 
 # Enable SFTP
 # (Already present by default)
