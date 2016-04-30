@@ -11,9 +11,8 @@ Inside DockerPack some global containers are included:
 Differs depending on the OS. Please refer to [wiki](https://github.com/DataSyntax/DockerPack/wiki).
 
 ### Provision script usage
+* `provision.sh --install`  should be run one time only - installs the subsystem
+* `provision.sh`  just reruns the standard containers
 
-* `provision.sh`  run everything
-* `provision.sh --global-containers` restart global containers (nginx-proxy, dns, sinopia)
-* `provision.sh --rebuild` rebuild docker images and restart global containers (nginx-proxy, dns, sinopia)
 
 
