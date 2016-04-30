@@ -4,6 +4,7 @@
 set -e
 
 MOUNT_POINT=/mnt/sda1
+DOCKER_COMPOSE_VERSION=$1
 
 # Download extra packages to permanent storage
 echo 'http://distro.ibiblio.org/tinycorelinux/' | sudo tee /opt/tcemirror
@@ -22,16 +23,39 @@ sudo chown docker:staff ${MOUNT_POINT}/ssl_certs
 sudo mkdir -p ${MOUNT_POINT}/scripts
 sudo chown docker:staff ${MOUNT_POINT}/scripts
 
-sudo mv /tmp/bootsync.sh /var/lib/boot2docker/bootsync.sh
-sudo chown root:root /var/lib/boot2docker/bootsync.sh
+matches() {
+    input="$1"
+    pattern="$2"
+    echo "$input" | grep -q "$pattern"
+}
+
+# Install docker-compose
+echo "Checking docker-compose version to be $DOCKER_COMPOSE_VERSION..."
+CURRENT_DOCKER_COMPOSE_VERSION=`sudo /var/lib/boot2docker/bin/docker-compose --version` 2>/dev/null || CURRENT_DOCKER_COMPOSE_VERSION=""
+if [ -n "$CURRENT_DOCKER_COMPOSE_VERSION" ] && matches "$CURRENT_DOCKER_COMPOSE_VERSION" "$DOCKER_COMPOSE_VERSION"; then
+    echo "Latest version already installed. Skipping..."
+else
+    sudo rm -rf /var/lib/boot2docker/bin/docker-compose  && \
+    sudo curl -L https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-`uname -s`-`uname -m` --create-dirs -o /var/lib/boot2docker/bin/docker-compose && \
+    sudo chmod +x /var/lib/boot2docker/bin/docker-compose
+fi
+
+sudo mv /tmp/bootsync.sh /var/lib/boot2docker/bootsync.sh && \
+sudo chown root:root /var/lib/boot2docker/bootsync.sh && \
 sudo chmod +x /var/lib/boot2docker/bootsync.sh
 
-sudo mv /tmp/id_rsa.pub /var/lib/boot2docker/id_rsa.pub
+sudo mv /tmp/id_rsa.pub /var/lib/boot2docker/id_rsa.pub && \
 sudo chown root:root /var/lib/boot2docker/id_rsa.pub
 
+sudo mv /tmp/aliases.sh /mnt/sda1/scripts/aliases.sh && \
+sudo chown root:root /mnt/sda1/scripts/aliases.sh && \
+sudo chmod +x /mnt/sda1/scripts/aliases.sh
+
 # Append Docker IP and DNS configuration to EXTRA_ARGS
-sudo sed -i "/EXTRA_ARGS='/a --dns 172.17.42.1 --dns 8.8.8.8" /var/lib/boot2docker/profile
-sudo sed -i "/EXTRA_ARGS='/a --bip=172.17.42.1/24" /var/lib/boot2docker/profile
+# sudo sed -i "/EXTRA_ARGS='/a --dns 172.17.42.1 --dns 8.8.8.8" /var/lib/boot2docker/profile
+# sudo sed -i "/EXTRA_ARGS='/a --bip=172.17.42.1/24" /var/lib/boot2docker/profile
+
+source /var/lib/boot2docker/bootsync.sh
 
 
 # Enable SFTP
