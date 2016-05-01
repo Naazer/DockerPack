@@ -31,10 +31,6 @@ case $i in
     rebuild=1
     shift # past argument with no value
     ;;
-    --global-containers)
-    globalcontainers=1
-    shift # past argument with no value
-    ;;
     *)
     # unknown option
     ;;
