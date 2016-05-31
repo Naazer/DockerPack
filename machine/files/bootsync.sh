@@ -29,3 +29,4 @@ sudo grep -q "for f in \~/scripts/\*.sh; do source \$f; done" /home/docker/.ashr
 sudo ln -sfn /mnt/sda1/projects /projects
 #Create symlink to certificates folder
 sudo ln -sfn /mnt/sda1/ssl_certs /ssl_certs
+

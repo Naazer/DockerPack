@@ -51,12 +51,23 @@ sudo mv /tmp/aliases.sh /mnt/sda1/scripts/aliases.sh && \
 sudo chown root:root /mnt/sda1/scripts/aliases.sh && \
 sudo chmod +x /mnt/sda1/scripts/aliases.sh
 
-# Append Docker IP and DNS configuration to EXTRA_ARGS
-# sudo sed -i "/EXTRA_ARGS='/a --dns 172.17.42.1 --dns 8.8.8.8" /var/lib/boot2docker/profile
-# sudo sed -i "/EXTRA_ARGS='/a --bip=172.17.42.1/24" /var/lib/boot2docker/profile
+# Installing certificates
+sudo mv /tmp/ca.pem /var/lib/boot2docker/ca.pem && \
+sudo chown root:root /var/lib/boot2docker/ca.pem && \
+sudo chmod 644 /var/lib/boot2docker/ca.pem
+
+sudo mv /tmp/server.pem /var/lib/boot2docker/server.pem && \
+sudo chown root:root /var/lib/boot2docker/server.pem && \
+sudo chmod 644 /var/lib/boot2docker/server.pem
+
+sudo mv /tmp/server-key.pem /var/lib/boot2docker/server-key.pem && \
+sudo chown root:root /var/lib/boot2docker/server-key.pem && \
+sudo chmod 644 /var/lib/boot2docker/server-key.pem
+
 
 source /var/lib/boot2docker/bootsync.sh
 
+sudo /etc/init.d/docker restart
 
 # Enable SFTP
 # (Already present by default)
