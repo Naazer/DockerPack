@@ -208,21 +208,27 @@ then
     docker rmi -f datasyntax/nginx-proxy > /dev/null 2>&1 || true
 fi
 
-#determine docker0 ip
-DOCKER0_IP=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6 | cut -d'/' -f1"`
-DOCKER0_NETWORK=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6"`
-
 echo "Building nginx-proxy image... "
 docker build -t datasyntax/nginx-proxy dockers/nginx-proxy/
 
 if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" != "Linux" ]
 then
+
+    #determine docker0 ip
+    DOCKER0_IP=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6 | cut -d'/' -f1"`
+    DOCKER0_NETWORK=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6"`
+
     echo "Starting system-wide DNS service... "
     docker run -d --name dns -p 53:53/udp --cap-add=NET_ADMIN \
     --restart always \
     --dns 8.8.8.8 -v /var/run/docker.sock:/var/run/docker.sock \
     jderusse/dns-gen > /dev/null
 else
+
+    #determine docker0 ip
+    DOCKER0_IP=`ip addr list docker0 | grep 'inet ' | cut -d' ' -f6 | cut -d'/' -f1`
+    DOCKER0_NETWORK=`ip addr list docker0 | grep 'inet ' | cut -d' ' -f6`
+    
     echo "Starting system-wide DNS service... "
     docker run -d --name dns -p $DOCKER0_IP:53:53/udp --cap-add=NET_ADMIN \
     --restart always \
