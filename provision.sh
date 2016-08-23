@@ -141,12 +141,11 @@ then
             echo "Assuming 'No'"
         fi
 
-
-
-        # Detect shell to write to the right .rc file
+        echo "Detect shell to write to the right .rc file"
         if [[ $SHELL == '/bin/bash' || $SHELL == '/bin/sh' ]]; then SOURCE_FILE=".bash_profile"; fi
         if [[ $SHELL == '/bin/zsh' ]]; then	SOURCE_FILE=".zshrc"; fi
         if [[ $SOURCE_FILE ]]; then
+            echo "Replacement ... "
             echo $HOME/$SOURCE_FILE
             sed -iE "/DOCKER_TLS_VERIFY/d" $HOME/$SOURCE_FILE
             sed -iE "/DOCKER_HOST/d" $HOME/$SOURCE_FILE
