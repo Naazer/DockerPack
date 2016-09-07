@@ -100,16 +100,10 @@ then
                 echo "Docker of version $DOCKER_VERSION not found. Download latest docker-toolbox for Windows"
                 exit
             else
-                #sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
-                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION > /usr/local/bin/docker
+                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
                 sudo chmod +x /usr/local/bin/docker
             fi
         fi
-
-        # Redownkoad iso if necessary
-        echo "Checking ISO checksum..."
-        chmod +x iso/download.sh && iso/download.sh https://github.com/boot2docker/boot2docker/releases/download/v$BOOT2DOCKER_VERSION/boot2docker.iso $B2D_ISO_CHECKSUM
-
 
         #Creating docker-machine instance
         echo "Creating docker-machine '$MACHINE_NAME'..."
@@ -133,8 +127,11 @@ then
             VBoxManage controlvm $MACHINE_NAME poweroff 2>/dev/null || true
             VBoxManage unregistervm $MACHINE_NAME --delete 2>/dev/null || true
             docker-machine rm --force $MACHINE_NAME 2>/dev/null || true
-            docker-machine create --driver=virtualbox --virtualbox-memory=$memorysize --virtualbox-cpu-count=$cpucount --virtualbox-disk-size=$disksize  \
-                --virtualbox-boot2docker-url=iso/boot2docker.iso --virtualbox-hostonly-cidr=$VB_NETWORK \
+            docker-machine create --driver virtualbox \
+                --virtualbox-memory $memorysize \
+                --virtualbox-cpu-count $cpucount \
+                --virtualbox-disk-size $disksize  \
+                --virtualbox-hostonly-cidr $VB_NETWORK \
                 --virtualbox-no-share \
                 $MACHINE_NAME
         else
@@ -196,8 +193,8 @@ then
                 echo "Docker of version $DOCKER_VERSION not found. Download latest docker-toolbox for Windows"
                 exit
             else
-                #sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
-                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION > /usr/bin/docker
+                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
+                #sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION > /usr/bin/docker
                 sudo chmod +x /usr/local/bin/docker
             fi
         fi
