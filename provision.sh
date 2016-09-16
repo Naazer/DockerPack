@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-DOCKER_MACHINE_VERSION="0.6.0"
-BOOT2DOCKER_VERSION="1.10.3"
-DOCKER_VERSION="1.10.3"
-DOCKER_COMPOSE_VERSION="1.6.2"
+DOCKER_MACHINE_VERSION="0.8.1"
+BOOT2DOCKER_VERSION="1.12.1"
+DOCKER_VERSION="1.12.1"
+DOCKER_COMPOSE_VERSION="1.8.0"
 MACHINE_NAME="docker-host"
 DEFAULT_MEMORY_SIZE="4096"
 DEFAULT_CPU_COUNT="2"
@@ -100,16 +100,10 @@ then
                 echo "Docker of version $DOCKER_VERSION not found. Download latest docker-toolbox for Windows"
                 exit
             else
-                #sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
-                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION > /usr/local/bin/docker
+                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
                 sudo chmod +x /usr/local/bin/docker
             fi
         fi
-
-        # Redownkoad iso if necessary
-        echo "Checking ISO checksum..."
-        chmod +x iso/download.sh && iso/download.sh https://github.com/boot2docker/boot2docker/releases/download/v$BOOT2DOCKER_VERSION/boot2docker.iso $B2D_ISO_CHECKSUM
-
 
         #Creating docker-machine instance
         echo "Creating docker-machine '$MACHINE_NAME'..."
@@ -133,20 +127,22 @@ then
             VBoxManage controlvm $MACHINE_NAME poweroff 2>/dev/null || true
             VBoxManage unregistervm $MACHINE_NAME --delete 2>/dev/null || true
             docker-machine rm --force $MACHINE_NAME 2>/dev/null || true
-            docker-machine create --driver=virtualbox --virtualbox-memory=$memorysize --virtualbox-cpu-count=$cpucount --virtualbox-disk-size=$disksize  \
-                --virtualbox-boot2docker-url=iso/boot2docker.iso --virtualbox-hostonly-cidr=$VB_NETWORK \
+            docker-machine create --driver virtualbox \
+                --virtualbox-memory $memorysize \
+                --virtualbox-cpu-count $cpucount \
+                --virtualbox-disk-size $disksize  \
+                --virtualbox-hostonly-cidr $VB_NETWORK \
                 --virtualbox-no-share \
                 $MACHINE_NAME
         else
             echo "Assuming 'No'"
         fi
 
-
-
-        # Detect shell to write to the right .rc file
+        echo "Detect shell to write to the right .rc file"
         if [[ $SHELL == '/bin/bash' || $SHELL == '/bin/sh' ]]; then SOURCE_FILE=".bash_profile"; fi
         if [[ $SHELL == '/bin/zsh' ]]; then	SOURCE_FILE=".zshrc"; fi
         if [[ $SOURCE_FILE ]]; then
+            echo "Replacement ... "
             echo $HOME/$SOURCE_FILE
             sed -iE "/DOCKER_TLS_VERIFY/d" $HOME/$SOURCE_FILE
             sed -iE "/DOCKER_HOST/d" $HOME/$SOURCE_FILE
@@ -197,8 +193,8 @@ then
                 echo "Docker of version $DOCKER_VERSION not found. Download latest docker-toolbox for Windows"
                 exit
             else
-                #sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
-                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION > /usr/bin/docker
+                sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION.tgz | tar -zxv -C /usr/local/bin --strip-components 1 > /usr/local/bin/docker
+                #sudo curl -L https://get.docker.com/builds/$UNAME_S/$UNAME_M/docker-$DOCKER_VERSION > /usr/bin/docker
                 sudo chmod +x /usr/local/bin/docker
             fi
         fi
