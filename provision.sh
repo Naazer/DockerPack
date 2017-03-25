@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
-DOCKER_MACHINE_VERSION="0.9.0"
-BOOT2DOCKER_VERSION="1.13.1"
-DOCKER_VERSION="1.13.1"
-DOCKER_COMPOSE_VERSION="1.11.1"
+DOCKER_MACHINE_VERSION="0.10.0"
+BOOT2DOCKER_VERSION="v17.03.0-ce"
+DOCKER_VERSION="17.03.0-ce"
+DOCKER_COMPOSE_VERSION="1.11.2"
 MACHINE_NAME="docker-host"
 DEFAULT_MEMORY_SIZE="4096"
 DEFAULT_CPU_COUNT="2"
 DEFAULT_DISK_SIZE="51200"
 VB_NETWORK="192.168.10.1/24"
 B2D_ISO_CHECKSUM="88a752a5956b71af5a544abadc89c5a2c4fa8173c4f3b7855bd449d46dd1a4c9"
-BOOT2DOCKER_URL="https://github.com/boot2docker/boot2docker/releases/download/v1.13.1/boot2docker.iso"
+BOOT2DOCKER_URL="https://github.com/boot2docker/boot2docker/releases/download/v17.03.0-ce/boot2docker.iso"
 
 arguments=$*
 if [ $# -eq 0 ]; then
