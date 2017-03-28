@@ -33,3 +33,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     cap_add:
       - NET_ADMIN
+
+
+  rsync:
+    image: nabeken/docker-volume-container-rsync
+    container_name: rsync
+    restart: always
+    network_mode: "bridge"
+    ports:
+      - "${DOCKER0_IP}:873:873"
+    env_file: .env
+    volumes:
+      - "${LOCALPATH}:${VOLUME}"
