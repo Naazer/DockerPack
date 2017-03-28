@@ -1,0 +1,35 @@
+version: "3"
+services:
+
+  nginxproxy:
+    build:
+      context: dockers/nginx-proxy
+    image: datasyntax/nginx-proxy
+    container_name: vhost-proxy
+    restart: always
+    network_mode: "bridge"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /ssl_certs:/etc/nginx/certs
+
+
+  dns:
+    image: jderusse/dns-gen
+    container_name: dns
+    restart: always
+    network_mode: "bridge"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "${DOCKER0_IP}:53:53/udp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    cap_add:
+      - NET_ADMIN
