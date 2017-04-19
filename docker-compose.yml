@@ -43,6 +43,7 @@ services:
     environment:
       - OWNER=root
       - GROUP=root
+      - VOLUME=/projects
     volumes:
       - /projects
       - limesurvey-src:/projects/LimeSurvey
