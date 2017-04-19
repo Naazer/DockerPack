@@ -12,6 +12,9 @@ boot2docker.iso.checksum
 output*
 vagrant/vagrant.yml
 
+/openvpn/config/*
+/openvpn/out/*
+
 .*
 !.gitignore
 !.gitkeep

@@ -32,6 +32,10 @@ case $i in
     rebuild=1
     shift # past argument with no value
     ;;
+    --dns)
+    dns=1
+    shift # past argument with no value
+    ;;
     *)
     # unknown option
     ;;
@@ -205,8 +209,6 @@ then
 
         sudo docker daemon &
 
-
-
     fi
 
 fi
@@ -225,33 +227,37 @@ then
     ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no docker@192.168.10.10 'rm -rf boot2docker.iso'
 fi
 
-
-if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" != "Linux" ]
+# Install docker
+if [ -n "$dns" ]
 then
-    #determine docker0 ip
-    DOCKER0_IP=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6 | cut -d'/' -f1"`
-    DOCKER0_NETWORK=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6"`
-else
-    #determine docker0 ip
-    DOCKER0_IP=`ip addr list docker0 | grep 'inet ' | cut -d' ' -f6 | cut -d'/' -f1`
-    DOCKER0_NETWORK=`ip addr list docker0 | grep 'inet ' | cut -d' ' -f6`
+
+    if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" != "Linux" ]
+    then
+        #determine docker0 ip
+        DOCKER0_IP=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6 | cut -d'/' -f1"`
+        DOCKER0_NETWORK=`docker-machine ssh $MACHINE_NAME "ip addr list docker0 | grep 'inet ' | cut -d' ' -f6"`
+    else
+        #determine docker0 ip
+        DOCKER0_IP=`ip addr list docker0 | grep 'inet ' | cut -d' ' -f6 | cut -d'/' -f1`
+        DOCKER0_NETWORK=`ip addr list docker0 | grep 'inet ' | cut -d' ' -f6`
+    fi
+
+    # For OSX we can configure DNS resolver automatically
+    if [ "$(uname)" == "Darwin" ]; then
+        sudo mkdir -p /etc/resolver
+        echo "nameserver $DOCKER0_IP" | sudo tee /etc/resolver/docker >/dev/null
+        sudo route add -net $DOCKER0_NETWORK 192.168.10.10 || sudo route change -net $DOCKER0_NETWORK 192.168.10.10
+    fi
+
+    # Setting DNS (only for Linux or inside docker-host
+    if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" == "Linux" ]
+    then
+        sudo grep "nameserver $DOCKER0_IP" < /etc/resolv.conf > /dev/null 2>&1 || (echo "nameserver $DOCKER0_IP" | sudo cat - /etc/resolv.conf > temp && sudo mv temp /etc/resolv.conf)
+    fi
+
+    export DOCKER0_IP=$DOCKER0_IP
 fi
 
 
 docker-compose up -d --build --force-recreate
 
-echo "current ip is $DOCKER0_IP"
-echo "current network is $DOCKER0_NETWORK"
-
-# For OSX we can configure DNS resolver automatically
-if [ "$(uname)" == "Darwin" ]; then
-    sudo mkdir -p /etc/resolver
-    echo "nameserver 192.168.10.10" | sudo tee /etc/resolver/docker >/dev/null
-    sudo route add -net $DOCKER0_NETWORK 192.168.10.10 || sudo route change -net $DOCKER0_NETWORK 192.168.10.10
-fi
-
-# Setting DNS (only for Linux or inside docker-host
-if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" == "Linux" ]
-then
-    sudo grep "nameserver $DOCKER0_IP" < /etc/resolv.conf > /dev/null 2>&1 || (echo "nameserver $DOCKER0_IP" | sudo cat - /etc/resolv.conf > temp && sudo mv temp /etc/resolv.conf)
-fi
