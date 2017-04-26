@@ -16,7 +16,7 @@ services:
       - "${PROXY_HTTPS_PORT:-443}:443"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
-      - /ssl_certs:/etc/nginx/certs:cached
+      - /ssl_certs:/etc/nginx/certs
 
   dns:
     image: jderusse/dns-gen
