@@ -67,6 +67,7 @@ services:
   unison:
     image: eugenmayer/unison
     container_name: unison
+    restart: always
     networks:
       projects:
         aliases:
