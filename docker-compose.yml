@@ -64,6 +64,18 @@ services:
       - fvs-src:/projects/FVS
       - edu-src:/projects/CENTERPARCS
 
+  unison:
+    image: eugenmayer/unison
+    container_name: unison
+    networks:
+      projects:
+        aliases:
+          - fvs-sync.docker
+    environment:
+      "VOLUME": /projects
+    volumes:
+      - fvs-src:/projects/fvs
+
   dummy:
     build:
       context: dockers/maintenance
