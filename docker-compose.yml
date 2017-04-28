@@ -7,7 +7,10 @@ services:
     image: datasyntax/nginx-proxy
     container_name: vhost-proxy
     restart: always
-    network_mode: "bridge"
+    networks:
+      projects:
+        aliases:
+          - nginxproxy.docker
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -19,17 +22,19 @@ services:
       - /ssl_certs:/etc/nginx/certs
 
   dns:
-    image: jderusse/dns-gen
+    image: andyshinn/dnsmasq
     container_name: dns
     restart: always
-    network_mode: "bridge"
+    networks:
+      projects:
+        aliases:
+          - dns.docker
     dns:
       - 8.8.8.8
       - 8.8.4.4
     ports:
       - "${DOCKER0_IP}:53:53/udp"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    command: -S /docker/127.0.0.11 -A /lan/127.0.0.1
     cap_add:
       - NET_ADMIN
 
@@ -37,7 +42,10 @@ services:
     image: nabeken/docker-volume-container-rsync
     container_name: rsync
     restart: always
-    network_mode: "bridge"
+    networks:
+      projects:
+        aliases:
+          - rsync.docker
     ports:
       - "${DOCKER0_IP}:873:873"
     environment:
@@ -62,7 +70,10 @@ services:
     image: datasyntax/maintenance
     container_name: dummy
     restart: always
-    network_mode: "bridge"
+    networks:
+      projects:
+        aliases:
+          - dummy.docker
     environment:
       - MESSAGE="some custom message"
       - PORT=80
@@ -74,7 +85,10 @@ services:
     image: datasyntax/openvpn
     container_name: openvpn
     restart: always
-    network_mode: "bridge"
+    networks:
+      projects:
+        aliases:
+          - openvpn.docker
     command: /usr/bin/run.sh
     ports:
        - "${DOCKER0_IP}:1194:1194"
@@ -95,5 +109,7 @@ volumes:
   fvs-src:
   edu-src:
 
-
+networks:
+  projects:
+    external: true
 
