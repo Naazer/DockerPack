@@ -56,7 +56,7 @@ services:
       - /projects
       - limesurvey-src:/projects/LimeSurvey
       - opencpu-src:/projects/OpenCPU
-      - ppv3-src:/projects/PPV3
+      - ppv3-src:/projects/ProofPilotV3
       - qjobber-src:/projects/QJobber
       - userv3-src:/projects/UserV3
       - adminv3-src:/projects/AdminV3
